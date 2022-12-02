@@ -1,0 +1,3 @@
+[submodule "ini-parser"]
+	path = ini-parser
+	url = https://github.com/Poordeveloper/ini-parser
