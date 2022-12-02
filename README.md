@@ -6,6 +6,7 @@ A WIP upgrade of Extended Video Export for GTA V. (original can be found [here](
 
 * [C++ ScriptHook by Alexander Blade](http://www.dev-c.com/gtav/scripthookv/)
 * [vcpkg](https://vcpkg.io/)
+* [ini-parser by Poordeveloper](https://github.com/Poordeveloper/ini-parser)
 
 ## vcpkg Package Requirements.
 
