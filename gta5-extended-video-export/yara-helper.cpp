@@ -1,5 +1,6 @@
 #include "yara-helper.h"
 #include "logger.h"
+#include <vector>
 
 YaraHelper::~YaraHelper()
 {
@@ -81,8 +82,9 @@ int YaraHelper::callback_function(YR_SCAN_CONTEXT* context, int message, void * 
 		if (pThis->entries.count(pRule->identifier) > 0) {
 			YR_STRING* pString;
 			yr_rule_strings_foreach(pRule, pString) {
-				LOG(LL_DBG, pString->identifier, "(Matches found:", sizeof(pString), ")");
-				if (sizeof(pString) > 1) {
+				std::vector<YR_STRING*> pCount{ pString };
+				LOG(LL_DBG, pString->identifier, "(Matches found:", pCount.size(), ")");
+				if (pCount.size() > 1) {
 					*(pThis->entries[pRule->identifier].dest) = NULL;
 					break;
 				}
