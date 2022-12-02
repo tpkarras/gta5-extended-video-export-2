@@ -5,8 +5,6 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gta5-extended-video-export", "gta5-extended-video-export\gta5-lossless-render.vcxproj", "{12CCEE33-46E0-40E7-9F53-3699F5D5A761}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gta5-extended-video-export-test", "gta5-extended-video-export-test\gta5-extended-video-export-test.vcxproj", "{707353D5-3F57-4309-9FDD-E8FFF47A0A77}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
