@@ -18,7 +18,7 @@ namespace {
 	HRESULT hookVirtualFunction(CLASS_TYPE* pInstance, int vFuncIndex, LPVOID hookFunc, std::shared_ptr<PLH::VFuncSwapHook> VFuncDetour_Ex) {
 		PLH::VFuncMap * VFuncDetour_ExOrigMaps = new PLH::VFuncMap;
 		PLH::VFuncMap VFuncDetour_ExMaps = { {(uint16_t)vFuncIndex, (uint64_t)hookFunc} };
-		VFuncDetour_Ex.reset(new PLH::VFuncSwapHook((uint64_t)pInstance, (PLH::VFuncMap)VFuncDetour_ExMaps, (PLH::VFuncMap *)VFuncDetour_ExOrigMaps));
+		VFuncDetour_Ex.reset(new PLH::VFuncSwapHook(*(char*)pInstance, (PLH::VFuncMap)VFuncDetour_ExMaps, (PLH::VFuncMap *)VFuncDetour_ExOrigMaps));
 		if (!VFuncDetour_Ex->hook()) {
 			return E_FAIL;
 		}
@@ -41,7 +41,7 @@ namespace {
 	template <class = void>
 	HRESULT hookX64Function(LPVOID func, LPVOID hookFunc, std::shared_ptr<PLH::x64Detour> X64Detour_ex) {
 		PLH::CapstoneDisassembler dis(PLH::Mode::x64);
-		X64Detour_ex.reset(new PLH::x64Detour((uint64_t)func, (uint64_t)hookFunc, &hookFuncTramp, dis));
+		X64Detour_ex.reset(new PLH::x64Detour((char*)func, (char*)hookFunc, &hookFuncTramp, dis));
 		if (!X64Detour_ex->hook()) {
 			return E_FAIL;
 		}
