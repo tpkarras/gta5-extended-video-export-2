@@ -11,7 +11,7 @@
 
 namespace {
 
-	extern uint64_t hookFuncTramp = NULL;
+	uint64_t hookFuncTramp;
 
 	template <class CLASS_TYPE>
 	HRESULT hookVirtualFunction(CLASS_TYPE* pInstance, int vFuncIndex, LPVOID hookFunc, std::shared_ptr<PLH::VFuncSwapHook> VFuncDetour_Ex) {
