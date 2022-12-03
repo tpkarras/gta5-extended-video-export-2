@@ -238,6 +238,8 @@ void onPresent(IDXGISwapChain *swapChain) {
 void initialize() {
 	PRE();
 	try {
+		PLH::Log::registerLogger(logger);
+		logger->setLogLevel(PLH::ErrorLevel::SEV);
 		mainThreadId = std::this_thread::get_id();
 
 		/*REQUIRE(CoInitializeEx(NULL, COINIT_MULTITHREADED), "Failed to initialize COM");
