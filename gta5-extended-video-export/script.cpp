@@ -30,14 +30,14 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 namespace {
-	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_AddStream;
-	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_SetInputMediaType;
-	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_WriteSample;
-	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_Finalize;
-	std::shared_ptr<PLH::VFuncSwapHook>hkOMSetRenderTargets;
-	std::shared_ptr<PLH::VFuncSwapHook>hkDraw;
-	std::shared_ptr<PLH::VFuncSwapHook>hkCreateSourceVoice;
-	std::shared_ptr<PLH::VFuncSwapHook>hkSubmitSourceBuffer;
+	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_AddStream;
+	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_SetInputMediaType;
+	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_WriteSample;
+	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_Finalize;
+	std::shared_ptr<PLH::x64Detour>hkOMSetRenderTargets;
+	std::shared_ptr<PLH::x64Detour>hkDraw;
+	std::shared_ptr<PLH::x64Detour>hkCreateSourceVoice;
+	std::shared_ptr<PLH::x64Detour>hkSubmitSourceBuffer;
 	
 	std::shared_ptr<PLH::IatHook>hkCoCreateInstance;
 	std::shared_ptr<PLH::IatHook>hkMFCreateSinkWriterFromURL;
@@ -239,7 +239,6 @@ void initialize() {
 	PRE();
 	try {
 		PLH::Log::registerLogger(logger);
-		logger->setLogLevel(PLH::ErrorLevel::SEV);
 		mainThreadId = std::this_thread::get_id();
 
 		/*REQUIRE(CoInitializeEx(NULL, COINIT_MULTITHREADED), "Failed to initialize COM");
@@ -549,7 +548,7 @@ static void Hook_OMSetRenderTargets(
 			}
 		}
 	}
-	oOMSetRenderTargets(pThis, NumViews, ppRenderTargetViews, pDepthStencilView);
+	return PLH::FnCast(VHookFuncTramp, oOMSetRenderTargets)(pThis, NumViews, ppRenderTargetViews, pDepthStencilView);
 }
 
 static HRESULT Hook_MFCreateSinkWriterFromURL(
@@ -571,7 +570,7 @@ static HRESULT Hook_MFCreateSinkWriterFromURL(
 		}
 	}
 	POST();
-	return result;
+	return oOriginalVar = result;
 }
 
 static HRESULT Hook_IMFSinkWriter_AddStream(
@@ -582,7 +581,7 @@ static HRESULT Hook_IMFSinkWriter_AddStream(
 	PRE();
 	LOG(LL_NFO, "IMFSinkWriter::AddStream: ", GetMediaTypeDescription(pTargetMediaType).c_str());
 	POST();
-	return oIMFSinkWriter_AddStream(pThis, pTargetMediaType, pdwStreamIndex);
+	return PLH::FnCast(VHookFuncTramp, oIMFSinkWriter_AddStream)(pThis, pTargetMediaType, pdwStreamIndex);
 }
 
 static HRESULT IMFSinkWriter_SetInputMediaType(
@@ -699,7 +698,7 @@ static HRESULT IMFSinkWriter_SetInputMediaType(
 	}
 
 	POST();
-	return oIMFSinkWriter_SetInputMediaType(pThis, dwStreamIndex, pInputMediaType, pEncodingParameters);
+	return PLH::FnCast(VHookFuncTramp, oIMFSinkWriter_SetInputMediaType)(pThis, dwStreamIndex, pInputMediaType, pEncodingParameters);
 }
 
 static HRESULT Hook_IMFSinkWriter_WriteSample(
@@ -736,7 +735,7 @@ static HRESULT Hook_IMFSinkWriter_WriteSample(
 	/*if (!session) { 
 		return E_FAIL;
 	}*/
-	return S_OK;
+	return PLH::FnCast(VHookFuncTramp, oIMFSinkWriter_WriteSample)(pThis, dwStreamIndex, pSample);
 }
 
 static HRESULT Hook_IMFSinkWriter_Finalize(
@@ -757,7 +756,7 @@ static HRESULT Hook_IMFSinkWriter_Finalize(
 	LOG_CALL(LL_DBG, session.reset());
 	LOG_CALL(LL_DBG, ::exportContext.reset());
 	POST();
-	return S_OK;
+	return PLH::FnCast(VHookFuncTramp, oIMFSinkWriter_Finalize)(pThis);
 }
 
 void finalize() {
@@ -809,6 +808,7 @@ static void Draw(
 
 		LOG_CALL(LL_TRC, oDraw(pThis, VertexCount, StartVertexLocation));
 	}
+	return PLH::FnCast(VHookFuncTramp, oDraw)(pThis, VertexCount, StartVertexLocation);
 }
 
 //static void Detour_StepAudio(void* rcx) {
@@ -830,7 +830,7 @@ static void Draw(
 //}
 
 static HANDLE Detour_CreateThread(void* pFunc, void* pParams, int32_t r8d, int32_t r9d, void* rsp20, int32_t rsp28, char* name) {
-	void* result = oCreateThread(pFunc, pParams, r8d, r9d, rsp20, rsp28, name);
+	//void* result = oCreateThread(pFunc, pParams, r8d, r9d, rsp20, rsp28, name);
 	LOG(LL_TRC, "CreateThread:",
 		" pFunc:", pFunc,
 		" pParams:", pParams,
@@ -846,7 +846,7 @@ static HANDLE Detour_CreateThread(void* pFunc, void* pParams, int32_t r8d, int32
 	//	}
 	//}
 
-	return PLH::FnCast(hookFuncTramp, result);
+	return PLH::FnCast(hookFuncTramp, oCreateThread)(pFunc, pParams, r8d, r9d, rsp20, rsp28, name);
 }
 
 //static float Detour_GetGameSpeedMultiplier(void* rcx) {
@@ -1014,5 +1014,5 @@ static void* Detour_CreateTexture(void* rcx, char* name, uint32_t r8d, uint32_t 
 		}
 	}
 
-	return PLH::FnCast(hookFuncTramp, result);
+	return PLH::FnCast(hookFuncTramp, oCreateTexture)(rcx, name, r8d, width, height, format, rsp30);
 }

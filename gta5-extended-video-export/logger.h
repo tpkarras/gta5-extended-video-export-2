@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <exception>
 #include <sstream>
+#include <polyhook2/ErrorLog.hpp>
 extern "C" {
 	#include <libavutil\error.h>
 }
@@ -134,3 +135,25 @@ private:
 #define REQUIRE(o, m) {LOG_CALL_BUT_NOT_INVOKE_IT(LL_DBG, o); int __result = (int)o; if (FAILED(__result)) {LOG(LL_ERR, m, " ### error code: ", __result); throw std::runtime_error(m); }}
 
 #define NOT_NULL(o, m) {if ((o) == NULL) {LOG(LL_ERR, m); throw std::runtime_error(m);}}
+
+class PolyHookLog : public PLH::Logger
+{
+public:
+	void log(std::string msg, PLH::ErrorLevel level) override {
+		using ::Logger;
+		LogLevel logLevel;
+		if (level == PLH::ErrorLevel::SEV) {
+			logLevel = LogLevel::LL_ERR;
+		}
+		else if (level == PLH::ErrorLevel::WARN) {
+			logLevel = LogLevel::LL_WRN;
+		}
+		else if (level == PLH::ErrorLevel::INFO) {
+			logLevel = LogLevel::LL_NFO;
+		}
+		else if (level == PLH::ErrorLevel::NONE) {
+			logLevel = LogLevel::LL_DBG;
+		}
+		LOG(logLevel, msg);
+	};
+};
