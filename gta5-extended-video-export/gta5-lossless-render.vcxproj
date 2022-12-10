@@ -59,7 +59,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <DelayLoadDLLs>avcodec-58.dll;avdevice-58.dll;avfilter-7.dll;avformat-58.dll;avutil-56.dll;postproc-55.dll;swresample-3.dll;swscale-5.dll;zlibd1.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <DelayLoadDLLs>avcodec-58.dll;avdevice-58.dll;avfilter-7.dll;avformat-58.dll;avutil-56.dll;postproc-55.dll;swresample-3.dll;swscale-5.dll;zlibd1.dll;Zydis.dll;PolyHook_2.dll;OpenCL.dll;OpenEXR-3_1_d.dll;Imath-3_1_d.dll;capstone.dll;webp.dll;libx264-164.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
