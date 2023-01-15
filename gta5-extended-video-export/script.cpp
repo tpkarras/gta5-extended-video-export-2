@@ -30,31 +30,30 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 namespace {
-	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_AddStream;
-	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_SetInputMediaType;
-	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_WriteSample;
-	std::shared_ptr<PLH::x64Detour>hkIMFSinkWriter_Finalize;
-	std::shared_ptr<PLH::x64Detour>hkOMSetRenderTargets;
-	std::shared_ptr<PLH::x64Detour>hkDraw;
-	std::shared_ptr<PLH::x64Detour>hkCreateSourceVoice;
-	std::shared_ptr<PLH::x64Detour>hkSubmitSourceBuffer;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_AddStream;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_SetInputMediaType;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_WriteSample;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_Finalize;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkOMSetRenderTargets;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkDraw;
+	//std::shared_ptr<PLH::x64Detour>hkCreateSourceVoice;
+	//std::shared_ptr<PLH::x64Detour>hkSubmitSourceBuffer;
 	
-	std::shared_ptr<PLH::IatHook>hkCoCreateInstance;
-	std::shared_ptr<PLH::IatHook>hkMFCreateSinkWriterFromURL;
+	//std::shared_ptr<PLH::IatHook>hkCoCreateInstance;
+	std::pair<std::shared_ptr<PLH::IatHook>, uint64_t>hkMFCreateSinkWriterFromURL;
 
-	std::shared_ptr<PLH::x64Detour>hkGetFrameRateFraction;
-	std::shared_ptr<PLH::x64Detour>hkGetRenderTimeBase;
-	std::shared_ptr<PLH::x64Detour>hkStepAudio;
-	std::shared_ptr<PLH::x64Detour>hkGetGameSpeedMultiplier;
-	std::shared_ptr<PLH::x64Detour>hkCreateThread;
-	std::shared_ptr<PLH::x64Detour>hkGetFrameRate;
-	std::shared_ptr<PLH::x64Detour>hkGetAudioSamples;
-	std::shared_ptr<PLH::x64Detour>hkUnk01;
-	std::shared_ptr<PLH::x64Detour>hkCreateTexture;
-	std::shared_ptr<PLH::x64Detour>hkCreateExportTexture;
-	std::shared_ptr<PLH::x64Detour>hkLinearizeTexture;
-	std::shared_ptr<PLH::x64Detour>hkAudioUnk01;
-	std::shared_ptr<PLH::x64Detour>hkWaitForSingleObject;
+	//std::shared_ptr<PLH::x64Detour>hkGetFrameRateFraction;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkGetRenderTimeBase;
+	//std::shared_ptr<PLH::x64Detour>hkStepAudio;
+	//std::shared_ptr<PLH::x64Detour>hkGetGameSpeedMultiplier;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkCreateThread;
+	//std::shared_ptr<PLH::x64Detour>hkGetFrameRate;
+	//std::shared_ptr<PLH::x64Detour>hkGetAudioSamples;
+	//std::shared_ptr<PLH::x64Detour>hkUnk01;
+	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkCreateTexture;
+	//std::shared_ptr<PLH::x64Detour>hkCreateExportTexture;
+	//std::shared_ptr<PLH::x64Detour>hkAudioUnk01;
+	//std::shared_ptr<PLH::x64Detour>hkWaitForSingleObject;
 
 	/*std::shared_ptr<PLH::X64Detour> hkGetGlobalVariableIndex(new PLH::X64Detour);
 	std::shared_ptr<PLH::X64Detour> hkGetVariable(new PLH::X64Detour);
@@ -219,8 +218,8 @@ void onPresent(IDXGISwapChain *swapChain) {
 			pDevice->GetImmediateContext(pDeviceContext.GetAddressOf());
 			NOT_NULL(pDeviceContext.Get(), "Failed to get D3D11 device context");
 
-			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 13, &Draw, hkDraw), "Failed to hook ID3DDeviceContext::Draw");
-			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 33, &Hook_OMSetRenderTargets, hkOMSetRenderTargets), "Failed to hook ID3DDeviceContext::OMSetRenderTargets");
+			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 13, &Draw, hkDraw.second, hkDraw.first), "Failed to hook ID3DDeviceContext::Draw");
+			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 33, &Hook_OMSetRenderTargets, hkOMSetRenderTargets.second, hkOMSetRenderTargets.first), "Failed to hook ID3DDeviceContext::OMSetRenderTargets");
 			ComPtr<IDXGIDevice> pDXGIDevice;
 			REQUIRE(pDevice.As(&pDXGIDevice), "Failed to get IDXGIDevice from ID3D11Device");
 			
@@ -269,7 +268,7 @@ void initialize() {
 		//}
 
 
-		REQUIRE(hookNamedFunction("mfreadwrite.dll", "MFCreateSinkWriterFromURL", &Hook_MFCreateSinkWriterFromURL, hkMFCreateSinkWriterFromURL), "Failed to hook MFCreateSinkWriterFromURL in mfreadwrite.dll");
+		REQUIRE(hookNamedFunction("mfreadwrite.dll", "MFCreateSinkWriterFromURL", &Hook_MFCreateSinkWriterFromURL, hkMFCreateSinkWriterFromURL.second, hkMFCreateSinkWriterFromURL.first), "Failed to hook MFCreateSinkWriterFromURL in mfreadwrite.dll");
 		//REQUIRE(hookNamedFunction("ole32.dll", "CoCreateInstance", &Hook_CoCreateInstance, &oCoCreateInstance, hkCoCreateInstance), "Failed to hook CoCreateInstance in ole32.dll");
 			
 		pYaraHelper.reset(new YaraHelper());
@@ -303,7 +302,7 @@ void initialize() {
 		//REQUIRE(hookX64Function((BYTE*)(0x11441F4 + (intptr_t)info.lpBaseOfDll), &Detour_GetVarHash, &oGetVarHash, hkGetVar), "Failed to hook GetVar function.");
 		try {
 			if (pGetRenderTimeBase) {
-				REQUIRE(hookX64Function(pGetRenderTimeBase, &Detour_GetRenderTimeBase, hkGetRenderTimeBase), "Failed to hook FPS function.");
+				REQUIRE(hookX64Function(pGetRenderTimeBase, &Detour_GetRenderTimeBase, hkGetRenderTimeBase.second, hkGetRenderTimeBase.first), "Failed to hook FPS function.");
 				isCustomFrameRateSupported = true;		
 			} else {
 				LOG(LL_ERR, "Could not find the address for FPS function.");
@@ -311,13 +310,13 @@ void initialize() {
 			}
 
 			if (pCreateTexture) {
-				REQUIRE(hookX64Function(pCreateTexture, &Detour_CreateTexture, hkCreateTexture), "Failed to hook CreateTexture function.");
+				REQUIRE(hookX64Function(pCreateTexture, &Detour_CreateTexture, hkCreateTexture.second, hkCreateTexture.first), "Failed to hook CreateTexture function.");
 			} else {
 				LOG(LL_ERR, "Could not find the address for CreateTexture function.");
 			}
 
 			if (pCreateThread) {
-				REQUIRE(hookX64Function(pCreateThread, &Detour_CreateThread, hkCreateThread), "Failed to hook CreateThread function.");
+				REQUIRE(hookX64Function(pCreateThread, &Detour_CreateThread, hkCreateThread.second, hkCreateThread.first), "Failed to hook CreateThread function.");
 			} else {
 				LOG(LL_ERR, "Could not find the address for CreateThread function.");
 			}
@@ -439,7 +438,6 @@ static void Hook_OMSetRenderTargets(
 	ID3D11RenderTargetView *const *ppRenderTargetViews,
 	ID3D11DepthStencilView        *pDepthStencilView
 	) {
-		static int iterator_i = iterator;
 	if (::exportContext) {
 		for (uint32_t i = 0; i < NumViews; i++) {
 			if (ppRenderTargetViews[i]) {
@@ -548,7 +546,7 @@ static void Hook_OMSetRenderTargets(
 		}
 	}
 
-	return PLH::FnCast(hookFuncTramps[iterator_i], oOMSetRenderTargets)(pThis, NumViews, ppRenderTargetViews, pDepthStencilView);
+	return PLH::FnCast(hkOMSetRenderTargets.second, oOMSetRenderTargets)(pThis, NumViews, ppRenderTargetViews, pDepthStencilView);
 }
 
 static HRESULT Hook_MFCreateSinkWriterFromURL(
@@ -557,22 +555,21 @@ static HRESULT Hook_MFCreateSinkWriterFromURL(
 	IMFAttributes *pAttributes,
 	IMFSinkWriter **ppSinkWriter
 	) {
-	static int iterator_i = iterator;
 	PRE();
 	HRESULT result = oMFCreateSinkWriterFromURL(pwszOutputURL, pByteStream, pAttributes, ppSinkWriter);
 	if (SUCCEEDED(result)) {
 		try {
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 3, &Hook_IMFSinkWriter_AddStream, hkIMFSinkWriter_AddStream), "Failed to hook IMFSinkWriter::AddStream");
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 4, &IMFSinkWriter_SetInputMediaType, hkIMFSinkWriter_SetInputMediaType), "Failed to hook IMFSinkWriter::SetInputMediaType");
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 6, &Hook_IMFSinkWriter_WriteSample, hkIMFSinkWriter_WriteSample), "Failed to hook IMFSinkWriter::WriteSample");
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 11, &Hook_IMFSinkWriter_Finalize, hkIMFSinkWriter_Finalize), "Failed to hook IMFSinkWriter::Finalize");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 3, &Hook_IMFSinkWriter_AddStream, hkIMFSinkWriter_AddStream.second, hkIMFSinkWriter_AddStream.first), "Failed to hook IMFSinkWriter::AddStream");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 4, &IMFSinkWriter_SetInputMediaType, hkIMFSinkWriter_SetInputMediaType.second, hkIMFSinkWriter_SetInputMediaType.first), "Failed to hook IMFSinkWriter::SetInputMediaType");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 6, &Hook_IMFSinkWriter_WriteSample, hkIMFSinkWriter_WriteSample.second, hkIMFSinkWriter_WriteSample.first), "Failed to hook IMFSinkWriter::WriteSample");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 11, &Hook_IMFSinkWriter_Finalize, hkIMFSinkWriter_Finalize.second, hkIMFSinkWriter_Finalize.first), "Failed to hook IMFSinkWriter::Finalize");
 		} catch (...) {
 			LOG(LL_ERR, "Hooking IMFSinkWriter functions failed");
 		}
 	}
 	POST();
 
-	return oOriginalVars[iterator_i] = result;
+	return hkMFCreateSinkWriterFromURL.second = result;
 }
 
 static HRESULT Hook_IMFSinkWriter_AddStream(
@@ -580,12 +577,11 @@ static HRESULT Hook_IMFSinkWriter_AddStream(
 	IMFMediaType  *pTargetMediaType,
 	DWORD         *pdwStreamIndex
 	) {
-	static int iterator_i = iterator;
 	PRE();
 	LOG(LL_NFO, "IMFSinkWriter::AddStream: ", GetMediaTypeDescription(pTargetMediaType).c_str());
 	POST();
 
-	return PLH::FnCast(hookFuncTramps[iterator_i], oIMFSinkWriter_AddStream)(pThis, pTargetMediaType, pdwStreamIndex);
+	return PLH::FnCast(hkIMFSinkWriter_AddStream.second, oIMFSinkWriter_AddStream)(pThis, pTargetMediaType, pdwStreamIndex);
 }
 
 static HRESULT IMFSinkWriter_SetInputMediaType(
@@ -594,7 +590,6 @@ static HRESULT IMFSinkWriter_SetInputMediaType(
 	IMFMediaType  *pInputMediaType,
 	IMFAttributes *pEncodingParameters
 	) {
-	static int iterator_i = iterator;
 	PRE();
 	LOG(LL_NFO, "IMFSinkWriter::SetInputMediaType: ", GetMediaTypeDescription(pInputMediaType).c_str());
 
@@ -703,7 +698,7 @@ static HRESULT IMFSinkWriter_SetInputMediaType(
 	}
 
 	POST();
-	return PLH::FnCast(hookFuncTramps[iterator_i], oIMFSinkWriter_SetInputMediaType)(pThis, dwStreamIndex, pInputMediaType, pEncodingParameters);
+	return PLH::FnCast(hkIMFSinkWriter_SetInputMediaType.second, oIMFSinkWriter_SetInputMediaType)(pThis, dwStreamIndex, pInputMediaType, pEncodingParameters);
 }
 
 static HRESULT Hook_IMFSinkWriter_WriteSample(
@@ -711,7 +706,6 @@ static HRESULT Hook_IMFSinkWriter_WriteSample(
 	DWORD         dwStreamIndex,
 	IMFSample     *pSample
 	) {
-	static int iterator_i = iterator;
 	std::lock_guard<std::mutex> sessionLock(mxSession);
 
 	if ((session != NULL) && (dwStreamIndex == 1) && (!::exportContext->isAudioExportDisabled)) {
@@ -741,13 +735,12 @@ static HRESULT Hook_IMFSinkWriter_WriteSample(
 	/*if (!session) { 
 		return E_FAIL;
 	}*/
-	return PLH::FnCast(hookFuncTramps[iterator_i], oIMFSinkWriter_WriteSample)(pThis, dwStreamIndex, pSample);
+	return PLH::FnCast(hkIMFSinkWriter_WriteSample.second, oIMFSinkWriter_WriteSample)(pThis, dwStreamIndex, pSample);
 }
 
 static HRESULT Hook_IMFSinkWriter_Finalize(
 	IMFSinkWriter *pThis
 	) {
-	static int iterator_i = iterator;
 	PRE();
 	std::lock_guard<std::mutex> sessionLock(mxSession);
 	try {
@@ -763,17 +756,17 @@ static HRESULT Hook_IMFSinkWriter_Finalize(
 	LOG_CALL(LL_DBG, session.reset());
 	LOG_CALL(LL_DBG, ::exportContext.reset());
 	POST();
-	return PLH::FnCast(hookFuncTramps[iterator_i], oIMFSinkWriter_Finalize)(pThis);
+	return PLH::FnCast(hkIMFSinkWriter_Finalize.second, oIMFSinkWriter_Finalize)(pThis);
 }
 
 void finalize() {
 	PRE();
-	hkCoCreateInstance->unHook();
-	hkMFCreateSinkWriterFromURL->unHook();
-	hkIMFSinkWriter_AddStream->unHook();
-	hkIMFSinkWriter_SetInputMediaType->unHook();
-	hkIMFSinkWriter_WriteSample->unHook();
-	hkIMFSinkWriter_Finalize->unHook();
+	//hkCoCreateInstance->unHook();
+	hkMFCreateSinkWriterFromURL.first->unHook();
+	hkIMFSinkWriter_AddStream.first->unHook();
+	hkIMFSinkWriter_SetInputMediaType.first->unHook();
+	hkIMFSinkWriter_WriteSample.first->unHook();
+	hkIMFSinkWriter_Finalize.first->unHook();
 	POST();
 }
 
@@ -782,7 +775,6 @@ static void Draw(
 	UINT VertexCount,
 	UINT StartVertexLocation
 	) {
-	static int iterator_i = iterator;
 	//oDraw(pThis, VertexCount, StartVertexLocation);
 	if (pCtxLinearizeBuffer == pThis) {
 		pCtxLinearizeBuffer = nullptr;
@@ -816,7 +808,7 @@ static void Draw(
 
 		LOG_CALL(LL_TRC, oDraw(pThis, VertexCount, StartVertexLocation));
 	}
-	return PLH::FnCast(hookFuncTramps[iterator_i], oDraw)(pThis, VertexCount, StartVertexLocation);
+	return PLH::FnCast(hkDraw.second, oDraw)(pThis, VertexCount, StartVertexLocation);
 }
 
 //static void Detour_StepAudio(void* rcx) {
@@ -838,7 +830,6 @@ static void Draw(
 //}
 
 static HANDLE Detour_CreateThread(void* pFunc, void* pParams, int32_t r8d, int32_t r9d, void* rsp20, int32_t rsp28, char* name) {
-	static int iterator_i = iterator;
 	//void* result = oCreateThread(pFunc, pParams, r8d, r9d, rsp20, rsp28, name);
 	LOG(LL_TRC, "CreateThread:",
 		" pFunc:", pFunc,
@@ -855,7 +846,7 @@ static HANDLE Detour_CreateThread(void* pFunc, void* pParams, int32_t r8d, int32
 	//	}
 	//}
 
-	return PLH::FnCast(hookFuncTramps[iterator_i], oCreateThread)(pFunc, pParams, r8d, r9d, rsp20, rsp28, name);
+	return PLH::FnCast(hkCreateThread.second, oCreateThread)(pFunc, pParams, r8d, r9d, rsp20, rsp28, name);
 }
 
 //static float Detour_GetGameSpeedMultiplier(void* rcx) {
@@ -872,8 +863,7 @@ static float Detour_GetRenderTimeBase(int64_t choice) {
 	float result = 1000.0f * (float)fps.second / ((float)fps.first * ((float)config::motion_blur_samples + 1));
 	//float result = 1000.0f / 60.0f;
 	LOG(LL_NFO, "Time step: ", result);
-	static int iterator_i = iterator;
-	return PLH::FnCast(hookFuncTramps[iterator_i], oGetRenderTimeBase)(result);
+	return PLH::FnCast(hkGetRenderTimeBase.second, oGetRenderTimeBase)(result);
 }
 
 //static void Detour_WaitForSingleObject(void* rcx, int32_t edx) {
@@ -896,7 +886,6 @@ static float Detour_GetRenderTimeBase(int64_t choice) {
 //}
 
 static void* Detour_CreateTexture(void* rcx, char* name, uint32_t r8d, uint32_t width, uint32_t height, uint32_t format, void* rsp30) {
-	static int iterator_i = iterator;
 	void* result = oCreateTexture(rcx, name, r8d, width, height, format, rsp30);
 
 	void** vresult = (void**)result;
@@ -1025,5 +1014,5 @@ static void* Detour_CreateTexture(void* rcx, char* name, uint32_t r8d, uint32_t 
 		}
 	}
 
-	return PLH::FnCast(hookFuncTramps[iterator], oCreateTexture)(rcx, name, r8d, width, height, format, rsp30);
+	return PLH::FnCast(hkCreateTexture.second, oCreateTexture)(rcx, name, r8d, width, height, format, rsp30);
 }
