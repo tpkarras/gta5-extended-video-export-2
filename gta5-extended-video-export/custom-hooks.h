@@ -9,33 +9,26 @@
 //#include "..\PolyHook\PolyHook\PolyHook.hpp"
 #include "logger.h"
 
-class VFuncDetour : public PLH::x64Detour
-{
-public:
-	static std::unique_ptr<x64Detour> vDetour(void* func, uint_fast16_t vFuncIndex, void* funcHook, uint64_t tramp, PLH::ADisassembler& dis) {
-		uint64_t func_p = reinterpret_cast<uint64_t>(func);
-		uint64_t funcHook_p = (uint64_t)funcHook;
-		return std::make_unique<x64Detour>((uint64_t)(func_p+vFuncIndex), funcHook_p, &tramp, dis);
-	}
-};
-
 namespace {
 
 	auto logger = std::make_shared<PolyHookLog>();
 	PLH::CapstoneDisassembler dis(PLH::Mode::x64);
 
-	template <class CLASS_TYPE>
-	HRESULT hookVirtualFunction(CLASS_TYPE* pInstance, int vFuncIndex, LPVOID hookFunc, uint64_t tramp, std::shared_ptr<PLH::x64Detour> VFuncDetour_Ex) {
-			VFuncDetour_Ex = VFuncDetour::vDetour(pInstance, vFuncIndex, hookFunc, tramp, dis);
-		if (!VFuncDetour_Ex->hook()) {
+	template <class CLASS_TYPE, class FUNC_TYPE>
+	HRESULT hookVirtualFunction(CLASS_TYPE* pInstance, uint16_t vFuncIndex, LPVOID hookFunc, FUNC_TYPE* originalFunc, std::shared_ptr<PLH::VFuncSwapHook> VFuncSwapHook_Ex) {
+		const PLH::VFuncMap hookMap = { {vFuncIndex, reinterpret_cast<uint64_t>(hookFunc)} };
+		PLH::VFuncMap originalFunctions;
+		VFuncSwapHook_Ex.reset(new PLH::VFuncSwapHook(reinterpret_cast<uint64_t>(pInstance), hookMap, &originalFunctions));
+		if (!VFuncSwapHook_Ex->hook()) {
 			return E_FAIL;
 		}
+		*originalFunc = ForceCast<FUNC_TYPE, uint64_t>(originalFunctions[vFuncIndex]);
 		return S_OK;
 	}
 	
-	template <class = void>
-	HRESULT hookNamedFunction(LPCSTR dllname, LPCSTR funcName, LPVOID hookFunc, uint64_t originalVar, std::shared_ptr<PLH::IatHook> IATHook_ex) {
-		IATHook_ex.reset(new PLH::IatHook(dllname, funcName, (char*)hookFunc, &originalVar, L""));
+	template <class FUNC_TYPE>
+	HRESULT hookNamedFunction(LPCSTR dllname, LPCSTR funcName, LPVOID hookFunc, FUNC_TYPE* originalVar, std::shared_ptr<PLH::IatHook> IATHook_ex) {
+		IATHook_ex.reset(new PLH::IatHook(dllname, funcName, reinterpret_cast<uint64_t>(hookFunc), reinterpret_cast<uint64_t*>(&originalVar), L""));
 		if (!IATHook_ex->hook()) {
 			return E_FAIL;
 		}

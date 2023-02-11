@@ -28,11 +28,11 @@ extern "C" {
 namespace Encoder {
 	class Session {
 	public:
-		AVOutputFormat *oformat = NULL;
+		const AVOutputFormat *oformat = NULL;
 		AVFormatContext *fmtContext = NULL;
 		AVDictionary *fmtOptions = NULL;
 		
-		AVCodec *videoCodec = NULL;
+		const AVCodec *videoCodec = NULL;
 		AVCodecContext *videoCodecContext = NULL;
 		AVFrame *inputFrame = NULL;
 		AVFrame *outputFrame = NULL;
@@ -42,7 +42,7 @@ namespace Encoder {
 		uint64_t videoPTS = 0;
 		uint64_t motionBlurPTS = 0;
 
-		AVCodec *audioCodec = NULL;
+		const AVCodec *audioCodec = NULL;
 		AVCodecContext *audioCodecContext = NULL;
 		AVFrame *inputAudioFrame = NULL;
 		AVFrame *outputAudioFrame = NULL;

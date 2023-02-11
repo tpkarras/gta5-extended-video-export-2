@@ -18,8 +18,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-		LOG(LL_DBG, "HI!!");
-		SetDllDirectoryA((ExePath() + "\\EVE\\dlls\\").c_str());
+		//LOG(LL_DBG, "HI!!");
+		//SetDllDirectoryA((ExePath() + "\\EVE\\dlls\\").c_str());
 		config::reload();
 		if (!config::is_mod_enabled) {
 			LOG(LL_NON, "Extended Video Export mod is disabled in the config file. Exiting...");

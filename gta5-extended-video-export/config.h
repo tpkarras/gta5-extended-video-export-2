@@ -39,8 +39,8 @@
 #define CFG_AUDIO_CFG "options"
 
 //#define CFG_AUDIO_CODEC "audio_codec"
-#define INI_FILE_NAME "EVE\\" TARGET_NAME ".ini"
-#define PRESET_FILE_NAME "EVE\\preset.ini"
+#define INI_FILE_NAME TARGET_NAME ".ini"
+#define PRESET_FILE_NAME "preset.ini"
 
 class config {
 public:

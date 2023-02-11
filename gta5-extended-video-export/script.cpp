@@ -30,17 +30,17 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 namespace {
-	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_AddStream;
-	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_SetInputMediaType;
-	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_WriteSample;
-	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkIMFSinkWriter_Finalize;
-	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkOMSetRenderTargets;
-	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkDraw;
+	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_AddStream;
+	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_SetInputMediaType;
+	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_WriteSample;
+	std::shared_ptr<PLH::VFuncSwapHook>hkIMFSinkWriter_Finalize;
+	std::shared_ptr<PLH::VFuncSwapHook>hkOMSetRenderTargets;
+	std::shared_ptr<PLH::VFuncSwapHook>hkDraw;
 	//std::shared_ptr<PLH::x64Detour>hkCreateSourceVoice;
 	//std::shared_ptr<PLH::x64Detour>hkSubmitSourceBuffer;
 	
 	//std::shared_ptr<PLH::IatHook>hkCoCreateInstance;
-	std::pair<std::shared_ptr<PLH::IatHook>, uint64_t>hkMFCreateSinkWriterFromURL;
+	std::shared_ptr<PLH::IatHook>hkMFCreateSinkWriterFromURL;
 
 	//std::shared_ptr<PLH::x64Detour>hkGetFrameRateFraction;
 	std::pair<std::shared_ptr<PLH::x64Detour>, uint64_t>hkGetRenderTimeBase;
@@ -218,8 +218,8 @@ void onPresent(IDXGISwapChain *swapChain) {
 			pDevice->GetImmediateContext(pDeviceContext.GetAddressOf());
 			NOT_NULL(pDeviceContext.Get(), "Failed to get D3D11 device context");
 
-			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 13, &Draw, hkDraw.second, hkDraw.first), "Failed to hook ID3DDeviceContext::Draw");
-			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 33, &Hook_OMSetRenderTargets, hkOMSetRenderTargets.second, hkOMSetRenderTargets.first), "Failed to hook ID3DDeviceContext::OMSetRenderTargets");
+			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 13, &Draw, &oDraw, hkDraw), "Failed to hook ID3DDeviceContext::Draw");
+			REQUIRE(hookVirtualFunction(pDeviceContext.Get(), 33, &Hook_OMSetRenderTargets, &oOMSetRenderTargets, hkOMSetRenderTargets), "Failed to hook ID3DDeviceContext::OMSetRenderTargets");
 			ComPtr<IDXGIDevice> pDXGIDevice;
 			REQUIRE(pDevice.As(&pDXGIDevice), "Failed to get IDXGIDevice from ID3D11Device");
 			
@@ -268,7 +268,7 @@ void initialize() {
 		//}
 
 
-		REQUIRE(hookNamedFunction("mfreadwrite.dll", "MFCreateSinkWriterFromURL", &Hook_MFCreateSinkWriterFromURL, hkMFCreateSinkWriterFromURL.second, hkMFCreateSinkWriterFromURL.first), "Failed to hook MFCreateSinkWriterFromURL in mfreadwrite.dll");
+		REQUIRE(hookNamedFunction("mfreadwrite.dll", "MFCreateSinkWriterFromURL", &Hook_MFCreateSinkWriterFromURL, &oMFCreateSinkWriterFromURL, hkMFCreateSinkWriterFromURL), "Failed to hook MFCreateSinkWriterFromURL in mfreadwrite.dll");
 		//REQUIRE(hookNamedFunction("ole32.dll", "CoCreateInstance", &Hook_CoCreateInstance, &oCoCreateInstance, hkCoCreateInstance), "Failed to hook CoCreateInstance in ole32.dll");
 			
 		pYaraHelper.reset(new YaraHelper());
@@ -389,8 +389,8 @@ void initialize() {
 		//0x352A3C
 		//REQUIRE(hookX64Function((BYTE*)(0x352A3C + (intptr_t)info.lpBaseOfDll), &Detour_GetVarPtrByHash, &oGetVarPtrByHash, hkGetVarPtrByHash), "Failed to hook GetVarPtrByHash function.");
 
-		LOG_CALL(LL_DBG, av_register_all());
-		LOG_CALL(LL_DBG, avcodec_register_all());
+		//LOG_CALL(LL_DBG, av_register_all());
+		//LOG_CALL(LL_DBG, avcodec_register_all());
 		LOG_CALL(LL_DBG, av_log_set_level(AV_LOG_TRACE));
 		LOG_CALL(LL_DBG, av_log_set_callback(&avlog_callback));
 	} catch (std::exception& ex) {
@@ -545,8 +545,7 @@ static void Hook_OMSetRenderTargets(
 			}
 		}
 	}
-
-	return PLH::FnCast(hkOMSetRenderTargets.second, oOMSetRenderTargets)(pThis, NumViews, ppRenderTargetViews, pDepthStencilView);
+	oOMSetRenderTargets(pThis, NumViews, ppRenderTargetViews, pDepthStencilView);
 }
 
 static HRESULT Hook_MFCreateSinkWriterFromURL(
@@ -559,17 +558,17 @@ static HRESULT Hook_MFCreateSinkWriterFromURL(
 	HRESULT result = oMFCreateSinkWriterFromURL(pwszOutputURL, pByteStream, pAttributes, ppSinkWriter);
 	if (SUCCEEDED(result)) {
 		try {
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 3, &Hook_IMFSinkWriter_AddStream, hkIMFSinkWriter_AddStream.second, hkIMFSinkWriter_AddStream.first), "Failed to hook IMFSinkWriter::AddStream");
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 4, &IMFSinkWriter_SetInputMediaType, hkIMFSinkWriter_SetInputMediaType.second, hkIMFSinkWriter_SetInputMediaType.first), "Failed to hook IMFSinkWriter::SetInputMediaType");
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 6, &Hook_IMFSinkWriter_WriteSample, hkIMFSinkWriter_WriteSample.second, hkIMFSinkWriter_WriteSample.first), "Failed to hook IMFSinkWriter::WriteSample");
-			REQUIRE(hookVirtualFunction(*ppSinkWriter, 11, &Hook_IMFSinkWriter_Finalize, hkIMFSinkWriter_Finalize.second, hkIMFSinkWriter_Finalize.first), "Failed to hook IMFSinkWriter::Finalize");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 3, &Hook_IMFSinkWriter_AddStream, &oIMFSinkWriter_AddStream, hkIMFSinkWriter_AddStream), "Failed to hook IMFSinkWriter::AddStream");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 4, &IMFSinkWriter_SetInputMediaType, &oIMFSinkWriter_SetInputMediaType, hkIMFSinkWriter_SetInputMediaType), "Failed to hook IMFSinkWriter::SetInputMediaType");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 6, &Hook_IMFSinkWriter_WriteSample, &oIMFSinkWriter_WriteSample, hkIMFSinkWriter_WriteSample), "Failed to hook IMFSinkWriter::WriteSample");
+			REQUIRE(hookVirtualFunction(*ppSinkWriter, 11, &Hook_IMFSinkWriter_Finalize, &oIMFSinkWriter_Finalize, hkIMFSinkWriter_Finalize), "Failed to hook IMFSinkWriter::Finalize");
 		} catch (...) {
 			LOG(LL_ERR, "Hooking IMFSinkWriter functions failed");
 		}
 	}
 	POST();
 
-	return hkMFCreateSinkWriterFromURL.second = result;
+	return result;
 }
 
 static HRESULT Hook_IMFSinkWriter_AddStream(
@@ -581,7 +580,7 @@ static HRESULT Hook_IMFSinkWriter_AddStream(
 	LOG(LL_NFO, "IMFSinkWriter::AddStream: ", GetMediaTypeDescription(pTargetMediaType).c_str());
 	POST();
 
-	return PLH::FnCast(hkIMFSinkWriter_AddStream.second, oIMFSinkWriter_AddStream)(pThis, pTargetMediaType, pdwStreamIndex);
+	return oIMFSinkWriter_AddStream(pThis, pTargetMediaType, pdwStreamIndex);
 }
 
 static HRESULT IMFSinkWriter_SetInputMediaType(
@@ -698,7 +697,7 @@ static HRESULT IMFSinkWriter_SetInputMediaType(
 	}
 
 	POST();
-	return PLH::FnCast(hkIMFSinkWriter_SetInputMediaType.second, oIMFSinkWriter_SetInputMediaType)(pThis, dwStreamIndex, pInputMediaType, pEncodingParameters);
+	return oIMFSinkWriter_SetInputMediaType(pThis, dwStreamIndex, pInputMediaType, pEncodingParameters);
 }
 
 static HRESULT Hook_IMFSinkWriter_WriteSample(
@@ -735,7 +734,7 @@ static HRESULT Hook_IMFSinkWriter_WriteSample(
 	/*if (!session) { 
 		return E_FAIL;
 	}*/
-	return PLH::FnCast(hkIMFSinkWriter_WriteSample.second, oIMFSinkWriter_WriteSample)(pThis, dwStreamIndex, pSample);
+	return S_OK;
 }
 
 static HRESULT Hook_IMFSinkWriter_Finalize(
@@ -756,17 +755,17 @@ static HRESULT Hook_IMFSinkWriter_Finalize(
 	LOG_CALL(LL_DBG, session.reset());
 	LOG_CALL(LL_DBG, ::exportContext.reset());
 	POST();
-	return PLH::FnCast(hkIMFSinkWriter_Finalize.second, oIMFSinkWriter_Finalize)(pThis);
+	return S_OK;
 }
 
 void finalize() {
 	PRE();
 	//hkCoCreateInstance->unHook();
-	hkMFCreateSinkWriterFromURL.first->unHook();
-	hkIMFSinkWriter_AddStream.first->unHook();
-	hkIMFSinkWriter_SetInputMediaType.first->unHook();
-	hkIMFSinkWriter_WriteSample.first->unHook();
-	hkIMFSinkWriter_Finalize.first->unHook();
+	hkMFCreateSinkWriterFromURL->unHook();
+	hkIMFSinkWriter_AddStream->unHook();
+	hkIMFSinkWriter_SetInputMediaType->unHook();
+	hkIMFSinkWriter_WriteSample->unHook();
+	hkIMFSinkWriter_Finalize->unHook();
 	POST();
 }
 
@@ -775,7 +774,7 @@ static void Draw(
 	UINT VertexCount,
 	UINT StartVertexLocation
 	) {
-	//oDraw(pThis, VertexCount, StartVertexLocation);
+	oDraw(pThis, VertexCount, StartVertexLocation);
 	if (pCtxLinearizeBuffer == pThis) {
 		pCtxLinearizeBuffer = nullptr;
 
@@ -808,7 +807,6 @@ static void Draw(
 
 		LOG_CALL(LL_TRC, oDraw(pThis, VertexCount, StartVertexLocation));
 	}
-	return PLH::FnCast(hkDraw.second, oDraw)(pThis, VertexCount, StartVertexLocation);
 }
 
 //static void Detour_StepAudio(void* rcx) {

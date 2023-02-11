@@ -44,7 +44,7 @@ namespace Encoder {
 		this->isBeingDeleted = true;
 
 
-		LOG_CALL(LL_DBG, av_free(this->oformat));
+		//LOG_CALL(LL_DBG, av_free(this->oformat));
 		LOG_CALL(LL_DBG, av_free(this->fmtContext));
 		LOG_CALL(LL_DBG, avcodec_close(this->videoCodecContext));
 		LOG_CALL(LL_DBG, av_free(this->videoCodecContext));
@@ -253,7 +253,7 @@ namespace Encoder {
 		RET_IF_NULL(this->oformat, "Could not create format", E_FAIL);*/
 		RET_IF_FAILED_AV(avformat_alloc_output_context2(&this->fmtContext, this->oformat, NULL, NULL), "Could not allocate format context", E_FAIL);
 		RET_IF_NULL(this->fmtContext, "Could not allocate format context", E_FAIL);
-		//this->fmtContext = avformat_alloc_context();
+		//this->context = avformat_alloc_context();
 
 		this->fmtContext->oformat = this->oformat;
 		/*if (this->videoCodec) {
@@ -279,7 +279,7 @@ namespace Encoder {
 		av_dict_parse_string(&this->fmtOptions, fmtPreset.c_str(), "=", "/", 0);
 
 		//av_opt_set(this->fmtContext->priv_data, "path", filename, 0);
-		strcpy_s(this->fmtContext->filename, this->filename.c_str());
+		strcpy_s(this->fmtContext->url, RSIZE_MAX, this->filename.c_str());
 		//av_opt_set(this->fmtContext, "filename", this->filename.c_str(), 0);
 
 		bool hasVideo = false;
